@@ -5,8 +5,12 @@ const std = @import("std");
 
 const Build = std.Build;
 
-pub const Module = std.Build.Module;
-pub const Import = std.Build.Module.Import;
+pub const Module = Build.Module;
+pub const Import = Module.Import;
+
+pub const ExecutableOptions = Build.ExecutableOptions;
+pub const Step = Build.Step;
+pub const Compile = Build.Step.Compile;
 
 pub fn imp(name: []const u8, module: *Module) Import {
     return .{.name = name, .module = module};
@@ -138,16 +142,16 @@ pub const Project = struct {
         return .{.build = build};
     }
 
-    pub fn addModule(self: *const Self, name: []const u8, options: Module.CreateOptions) *Module {
+    pub fn addModule(self: Self, name: []const u8, options: Module.CreateOptions) *Module {
         return self.build.addModule(name, options);
     }
 
-    pub fn createModule(self: *const Self, name: []const u8, options: Module.CreateOptions) *Module {
+    pub fn createModule(self: Self, name: []const u8, options: Module.CreateOptions) *Module {
         return self.build.createModule(name, options);
     }
 
     pub fn dupedCreateModule(
-        self: *const Self,
+        self: Self,
         comptime count: usize,
         options: Module.CreateOptions,
     ) [count]*Module {
@@ -158,8 +162,23 @@ pub const Project = struct {
         return modules;
     }
 
-    pub fn path(self: *const Self, sub_path: []const u8) Build.LazyPath {
+    pub fn path(self: Self, sub_path: []const u8) Build.LazyPath {
         return self.build.path(sub_path);
+    }
+
+    pub fn addInstallExecutable(self: Self, step_name: ?[]const u8, options: ExecutableOptions) *Compile {
+        const exe = self.build.addExecutable(options);
+        self.build.installArtifact(exe);
+
+        if (step_name) |name| {
+            const run_step = self.build.step(name, "Run main executable.");
+            const run_cmd = self.build.addRunArtifact(exe);
+            run_step.dependOn(&run_cmd.step);
+            run_cmd.dependOn(self.build.getInstallStep());
+            run_cmd.addPassthruArgs();
+        }
+        
+        return exe;
     }
 };
 
