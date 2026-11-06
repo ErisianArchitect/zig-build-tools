@@ -174,7 +174,7 @@ pub const Project = struct {
             const run_step = self.build.step(name, "Run main executable.");
             const run_cmd = self.build.addRunArtifact(exe);
             run_step.dependOn(&run_cmd.step);
-            run_cmd.dependOn(self.build.getInstallStep());
+            run_cmd.step.dependOn(self.build.getInstallStep());
             run_cmd.addPassthruArgs();
         }
         
