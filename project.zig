@@ -352,7 +352,7 @@ pub const Project = struct {
         const mod = opts.createModule();
         if (imports) |imps| for (imps) |import| {
             mod.addImport(import.name, import.module);
-        }
+        };
         switch (target) {
             .release => self.release_imports.addOptions(name, mod),
             .check => self.check_imports.addOptions(name, mod),
