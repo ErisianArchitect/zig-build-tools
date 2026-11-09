@@ -180,7 +180,8 @@ pub const ProjectImports = struct {
         return .{
             .list = list.ptr,
             .connection_types = connections.ptr,
-            .capacity = capacity
+            .capacity = capacity,
+            .len = 0,
         };
     }
 
