@@ -384,7 +384,7 @@ pub const Project = struct {
     /// The behavior when `options` is a tuple is to
     /// flatten each of the fields within the tuple.
     pub fn addFlatCommonOptions(self: *Self, name: []const u8, imports: ?[]const Import, options: anytype) void {
-        self.addFlatOptionsTo(.both, name, options);
+        self.addFlatOptionsTo(.both, name, imports, options);
     }
 
     /// Adds ProjectInfo as a module to both release and check imports list.
