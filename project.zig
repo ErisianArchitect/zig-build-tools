@@ -188,6 +188,14 @@ pub const ProjectImports = struct {
         return self.list[0..self.len];
     }
 
+    fn importsSlice(self: Self) []Import {
+        return self.list[0..self.len];
+    }
+
+    fn connectionsSlice(self: Self) []ConnectionType {
+        return self.connection_types[0..self.len];
+    }
+
     pub fn isFull(self: Self) bool {
         // len shouldn't ever be greater than the capacity,
         // but we'll use `>=` anyway.
@@ -200,7 +208,7 @@ pub const ProjectImports = struct {
 
     pub fn connectAdv(self: *Self, comptime connection_type: ConnectionType, name: []const u8, module: *Module) void {
         if (self.isFull()) @panic("Ran out of room. Allocate a greater capacity, this is not dynamic.");
-        for (self.list, self.connection_types) |import, conn| {
+        for (self.importsSlice(), self.connectionsSlice()) |import, conn| {
             if (conn == .OneWay) continue;
             switch (comptime connection_type) {
                 .OneWay => {
@@ -229,7 +237,7 @@ pub const ProjectImports = struct {
 
     pub fn addOptions(self: *Self, name: []const u8, options_module: *Module) void {
         if (self.isEmpty()) @panic("No imports have been added.");
-        const has_twoway: bool = for (self.connection_types) |conn| {
+        const has_twoway: bool = for (self.connectionsSlice()) |conn| {
             if (conn == .TwoWay) break true;
         } else false;
         if (!has_twoway) @panic("No two-way connections present.");
