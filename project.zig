@@ -179,7 +179,7 @@ pub const ProjectImports = struct {
         const connections = allocator.alloc(ConnectionType, capacity) catch @panic("Out of memory.");
         return .{
             .list = list.ptr,
-            .connections = connections.ptr,
+            .connection_types = connections.ptr,
             .capacity = capacity
         };
     }
