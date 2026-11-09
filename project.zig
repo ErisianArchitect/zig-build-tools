@@ -45,12 +45,12 @@ pub const ProjectLicense = struct {
     name: []const u8,
     file: ?[]const u8 = null,
 
-    // pub inline fn embedFile(comptime self: Self) [:0]const u8 {
-    //     if (comptime self.file == null) @compileError("No file path was specified.");
-    //     return struct {
-    //         pub const file = @embedFile(self.file.?);
-    //     }.file;
-    // }
+    pub inline fn embedFile(comptime self: Self) [:0]const u8 {
+        if (comptime self.file == null) @compileError("No file path was specified.");
+        return struct {
+            pub const file = @embedFile(self.file.?);
+        }.file;
+    }
 };
 
 pub const ProjectInfo = struct {
@@ -334,7 +334,7 @@ pub const Project = struct {
         both,
     };
 
-    fn addFlatOptionsTo(self: *Self, comptime target: ImportsTarget, name: []const u8, options: anytype) void {
+    fn addFlatOptionsTo(self: *Self, comptime target: ImportsTarget, name: []const u8, imports: ?[]const Import, options: anytype) void {
         const opts = self.build.addOptions();
         const inf = @typeInfo(@TypeOf(options)).@"struct";
         if (inf.is_tuple) {
@@ -350,6 +350,9 @@ pub const Project = struct {
             }
         }
         const mod = opts.createModule();
+        if (imports) |imps| for (imps) |import| {
+            mod.addImport(import.name, import.module);
+        }
         switch (target) {
             .release => self.release_imports.addOptions(name, mod),
             .check => self.check_imports.addOptions(name, mod),
@@ -364,29 +367,29 @@ pub const Project = struct {
     ///
     /// The behavior when `options` is a tuple is to
     /// flatten each of the fields within the tuple.
-    pub fn addFlatReleaseOptions(self: *Self, name: []const u8, options: anytype) void {
-        self.addFlatOptionsTo(.release, name, options);
+    pub fn addFlatReleaseOptions(self: *Self, name: []const u8, imports: ?[]const Import, options: anytype) void {
+        self.addFlatOptionsTo(.release, name, imports, options);
     }
 
     /// Add flattened options to the check imports.
     ///
     /// The behavior when `options` is a tuple is to
     /// flatten each of the fields within the tuple.
-    pub fn addFlatCheckOptions(self: *Self, name: []const u8, options: anytype) void {
-        self.addFlatOptionsTo(.check, name, options);
+    pub fn addFlatCheckOptions(self: *Self, name: []const u8, imports: ?[]const Import, options: anytype) void {
+        self.addFlatOptionsTo(.check, name, imports, options);
     }
 
     /// Add flattened options to both imports lists.
     ///
     /// The behavior when `options` is a tuple is to
     /// flatten each of the fields within the tuple.
-    pub fn addFlatCommonOptions(self: *Self, name: []const u8, options: anytype) void {
+    pub fn addFlatCommonOptions(self: *Self, name: []const u8, imports: ?[]const Import, options: anytype) void {
         self.addFlatOptionsTo(.both, name, options);
     }
 
     /// Adds ProjectInfo as a module to both release and check imports list.
-    pub fn addProjectInfo(self: *Self, name: []const u8, info: ProjectInfo) void {
-        self.addFlatCommonOptions(name, info);
+    pub fn addProjectInfo(self: *Self, name: []const u8, imports: ?[]const Import, info: ProjectInfo) void {
+        self.addFlatCommonOptions(name, imports, info);
     }
 
     pub fn addInstallExecutable(self: Self, step_name: ?[]const u8, out: ?**Compile, options: ExecutableOptions) void {
