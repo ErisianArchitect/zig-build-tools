@@ -551,7 +551,7 @@ pub const SimpleProject = struct {
                     .Bytes => |v| options.addOption([]const u8, opt.name, v),
                 }
             }
-            const opts_mod = options.createModule(options);
+            const opts_mod = options.createModule();
 
             proj.addCommonOptions("OPTIONS", opts_mod);
         }
