@@ -33,26 +33,6 @@ pub const ConnectionType = enum {
     TwoWay,
 };
 
-pub const ProjectAuthor = struct {
-    name: []const u8,
-    homepage: ?[]const u8 = null,
-    email: ?[]const u8 = null,
-};
-
-pub const ProjectLicense = struct {
-    const Self = @This();
-    
-    name: []const u8,
-    file: ?[]const u8 = null,
-
-    pub inline fn embedFile(comptime self: Self) [:0]const u8 {
-        if (comptime self.file == null) @compileError("No file path was specified.");
-        return struct {
-            pub const file = @embedFile(self.file.?);
-        }.file;
-    }
-};
-
 pub const ProjectInfo = struct {
     name: []const u8,
     version: []const u8,
