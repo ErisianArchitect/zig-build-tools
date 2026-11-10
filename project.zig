@@ -390,7 +390,7 @@ pub const SimpleModule = struct {
 
 pub const SimpleDependencyModule = struct {
     name: []const u8,
-    rename: ?[]const u8,
+    rename: ?[]const u8 = null,
 };
 
 pub const SimpleDependency = struct {
