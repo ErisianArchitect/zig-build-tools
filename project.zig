@@ -62,6 +62,7 @@ pub const ProjectInfo = struct {
     repository: ?[]const u8 = null,
     licenses: []const []const u8 = &.{},
     authors: []const []const u8 = &.{},
+    test_field: []const ProjectAuthor = &.{},
 };
 
 /// Use a fixed_buffer_capacity that will fit the number of imports
