@@ -478,6 +478,7 @@ pub const SimpleProject = struct {
         for (self.dependencies) |dep| {
             count += dep.modules.len;
         }
+        return count;
     }
 
     pub fn build(self: Self, b: *Build) void {
