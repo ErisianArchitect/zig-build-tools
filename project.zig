@@ -503,7 +503,7 @@ pub const SimpleProject = struct {
         proj.connectRelease(self.info.name, &build_root_module, build_root_create_options);
         
         const check_suffix: []const u8 = "_check";
-        const check_root_name: []u8 = b.allocator.alloc(u8, self.info.name.len + check_suffix.len);
+        const check_root_name: []u8 = b.allocator.alloc(u8, self.info.name.len + check_suffix.len) catch @panic("Out of memory.");
         @memcpy(check_root_name[0..self.info.name.len], self.info.name);
         @memcpy(check_root_name[self.info.name.len..], check_suffix);
 
