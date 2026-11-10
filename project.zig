@@ -408,38 +408,57 @@ pub fn isString(comptime T: type) bool {
     };
 }
 
+pub fn ReleaseCheck(comptime T: type) type {
+    return struct {
+        const Self = @This();
+        
+        release: T,
+        check: T,
+
+        pub const Child = T;
+
+        pub inline fn init(release: T, check: ?T) Self {
+            return .{
+                .release = release,
+                .check = check orelse release,
+            };
+        }
+    };
+}
+
 pub const SimpleValue = union(enum) {
     const Self = @This();
     
-    Bool: bool,
-    U8: u8,
-    U16: u16,
-    U32: u32,
-    U64: u64,
-    U128: u128,
-    I8: i8,
-    I16: i16,
-    I32: i32,
-    I64: i64,
-    I128: i128,
-    F16: f16,
-    F32: f32,
-    F64: f64,
-    F128: f128,
-    Usize: usize,
-    Isize: isize,
-    Bytes: []const u8,
+    Bool: ReleaseCheck(bool),
+    U8: ReleaseCheck(u8),
+    U16: ReleaseCheck(u16),
+    U32: ReleaseCheck(u32),
+    U64: ReleaseCheck(u64),
+    U128: ReleaseCheck(u128),
+    I8: ReleaseCheck(i8),
+    I16: ReleaseCheck(i16),
+    I32: ReleaseCheck(i32),
+    I64: ReleaseCheck(i64),
+    I128: ReleaseCheck(i128),
+    F16: ReleaseCheck(f16),
+    F32: ReleaseCheck(f32),
+    F64: ReleaseCheck(f64),
+    F128: ReleaseCheck(f128),
+    Usize: ReleaseCheck(usize),
+    Isize: ReleaseCheck(isize),
+    Bytes: ReleaseCheck([]const u8),
 
-    pub fn init(value: anytype) Self {
-        if (comptime isString(@TypeOf(value))) {
-            return .{.Bytes = value};
+    pub fn init(release_value: anytype, check_value: ?@TypeOf(release_value)) Self {
+        if (comptime isString(@TypeOf(release_value))) {
+            return .{.Bytes = release_value};
         }
         const inf = @typeInfo(Self).@"union";
         const field_names = inf.field_names;
         const field_types = inf.field_types;
         inline for (field_names, field_types) |field, t| {
-            if (@TypeOf(value) == t) {
-                return @unionInit(Self, field, value);
+            if (@TypeOf(release_value) == t.Child) {
+                const rel_check: t = .init(release_value, check_value);
+                return @unionInit(Self, field, rel_check);
             }
         }
         @compileError("Not a valid value type.");
@@ -450,12 +469,12 @@ pub const SimpleOption = struct {
     const Self = @This();
 
     name: []const u8,
-    value: SimpleValue,
+    values: SimpleValue,
 
-    pub inline fn init(comptime T: type, name: []const u8, value: T) Self {
+    pub inline fn init(comptime T: type, name: []const u8, release_value: T, check_value: ?T) Self {
         return .{
             .name = name,
-            .value = SimpleValue.init(value),
+            .values = .init(release_value, check_value),
         };
     }
 };
@@ -528,32 +547,110 @@ pub const SimpleProject = struct {
         proj.addProjectInfo("PROJECT", self.info);
 
         if (self.options.len > 0) {
-            const options = b.addOptions();
+            const release_options = b.addOptions();
+            const check_options = b.addOptions();
             for (self.options) |opt| {
-                switch (opt.value) {
-                    .Bool => |v| options.addOption(bool, opt.name, v),
-                    .U8 => |v| options.addOption(u8, opt.name, v),
-                    .U16 => |v| options.addOption(u16, opt.name, v),
-                    .U32 => |v| options.addOption(u32, opt.name, v),
-                    .U64 => |v| options.addOption(u64, opt.name, v),
-                    .U128 => |v| options.addOption(u128, opt.name, v),
-                    .I8 => |v| options.addOption(i8, opt.name, v),
-                    .I16 => |v| options.addOption(i16, opt.name, v),
-                    .I32 => |v| options.addOption(i32, opt.name, v),
-                    .I64 => |v| options.addOption(i64, opt.name, v),
-                    .I128 => |v| options.addOption(i128, opt.name, v),
-                    .Usize => |v| options.addOption(usize, opt.name, v),
-                    .Isize => |v| options.addOption(isize, opt.name, v),
-                    .F16 => |v| options.addOption(f16, opt.name, v),
-                    .F32 => |v| options.addOption(f32, opt.name, v),
-                    .F64 => |v| options.addOption(f64, opt.name, v),
-                    .F128 => |v| options.addOption(f128, opt.name, v),
-                    .Bytes => |v| options.addOption([]const u8, opt.name, v),
+                switch (opt.values) {
+                    inline else => |v| {
+                        const VT = @TypeOf(v);
+                        const CT = VT.Child;
+                        release_options.addOption(CT, opt.name, v.release);
+                        check_options.addOption(CT, opt.name, v.check);
+                    },
                 }
+                // switch (opt.values) {
+                //     .Bool => |v| {
+                //         release_options.addOption(bool, opt.name, v.release);
+                //         check_options.addOption(bool, opt.name, v.check);
+                //     },
+                //     .U8 => |v| {
+                //         release_options.addOption(u8, opt.name, v.release);
+                //         check_options.addOption(u8, opt.name, v.check);
+                //     },
+                //     .U16 => |v| {
+                //         release_options.addOption(u16, opt.name, v.release);
+                //         check_options.addOption(u16, opt.name, v.check);
+                //     },
+                //     .U32 => |v| {
+                //         release_options.addOption(u32, opt.name, v.release);
+                //         check_options.addOption(u32, opt.name, v.check);
+                //     },
+                //     .U64 => |v| {
+                //         release_options.addOption(u64, opt.name, v.release);
+                //         check_options.addOption(u64, opt.name, v.check);
+                //     },
+                //     .U128 => |v| {
+                //         const V = u128;
+                //         release_options.addOption(V, opt.name, v.release);
+                //         check_options.addOption(V, opt.name, v.check);
+                //     },
+                //     .I8 => |v| {
+                //         const V = i8;
+                //         release_options.addOption(V, opt.name, v.release);
+                //         check_options.addOption(V, opt.name, v.check);
+                //     },
+                //     .I16 => |v| {
+                //         const V = i16;
+                //         release_options.addOption(V, opt.name, v.release);
+                //         check_options.addOption(V, opt.name, v.check);
+                //     },
+                //     .I32 => |v| {
+                //         const V = i32;
+                //         release_options.addOption(V, opt.name, v.release);
+                //         check_options.addOption(V, opt.name, v.check);
+                //     },
+                //     .I64 => |v| {
+                //         const V = i64;
+                //         release_options.addOption(V, opt.name, v.release);
+                //         check_options.addOption(V, opt.name, v.check);
+                //     },
+                //     .I128 => |v| {
+                //         const V = i128;
+                //         release_options.addOption(V, opt.name, v.release);
+                //         check_options.addOption(V, opt.name, v.check);
+                //     },
+                //     .Usize => |v| {
+                //         const V = usize;
+                //         release_options.addOption(V, opt.name, v.release);
+                //         check_options.addOption(V, opt.name, v.check);
+                //     },
+                //     .Isize => |v| {
+                //         const V = isize;
+                //         release_options.addOption(V, opt.name, v.release);
+                //         check_options.addOption(V, opt.name, v.check);
+                //     },
+                //     .F16 => |v| {
+                //         const V = f16;
+                //         release_options.addOption(V, opt.name, v.release);
+                //         check_options.addOption(V, opt.name, v.check);
+                //     },
+                //     .F32 => |v| {
+                //         const V = f32;
+                //         release_options.addOption(V, opt.name, v.release);
+                //         check_options.addOption(V, opt.name, v.check);
+                //     },
+                //     .F64 => |v| {
+                //         const V = f64;
+                //         release_options.addOption(V, opt.name, v.release);
+                //         check_options.addOption(V, opt.name, v.check);
+                //     },
+                //     .F128 => |v| {
+                //         const V = f128;
+                //         release_options.addOption(V, opt.name, v.release);
+                //         check_options.addOption(V, opt.name, v.check);
+                //     },
+                //     .Bytes => |v| {
+                //         const V = []const u8;
+                //         release_options.addOption(V, opt.name, v.release);
+                //         check_options.addOption(V, opt.name, v.check);
+                //     },
+                // }
             }
-            const opts_mod = options.createModule();
+            const release_opts_mod = release_options.createModule();
+            const check_opts_mod = check_options.createModule();
 
-            proj.addCommonOptions("OPTIONS", opts_mod);
+            proj.addReleaseOptions(release_opts_mod);
+            proj.addCheckOptions(check_opts_mod);
         }
 
         const build_compile_options = b.addOptions();
