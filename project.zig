@@ -450,7 +450,7 @@ pub const SimpleValue = union(enum) {
 
     pub fn init(release_value: anytype, check_value: ?@TypeOf(release_value)) Self {
         if (comptime isString(@TypeOf(release_value))) {
-            return .{.Bytes = release_value};
+            return .{.Bytes = .init(release_value, check_value)};
         }
         const inf = @typeInfo(Self).@"union";
         const field_names = inf.field_names;
