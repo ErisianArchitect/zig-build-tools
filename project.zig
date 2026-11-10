@@ -485,7 +485,7 @@ pub const SimpleProject = struct {
         const target = self.target orelse b.standardTargetOptions(.{});
         const optimize = self.optimize orelse b.standardOptimizeOption(.{});
 
-        var proj = Project.init(b, std.math.ceilPowerOfTwo(usize, self.importCount()) catch unreachable);
+        var proj = Project.init(b, std.math.ceilPowerOfTwo(usize, self.importCount() + 64) catch unreachable);
 
         const build_root_create_options: Module.CreateOptions = .{
             .root_source_file = b.path(self.root),
