@@ -649,8 +649,8 @@ pub const SimpleProject = struct {
             const release_opts_mod = release_options.createModule();
             const check_opts_mod = check_options.createModule();
 
-            proj.addReleaseOptions(release_opts_mod);
-            proj.addCheckOptions(check_opts_mod);
+            proj.addReleaseOptions("OPTIONS", release_opts_mod);
+            proj.addCheckOptions("OPTIONS", check_opts_mod);
         }
 
         const build_compile_options = b.addOptions();
