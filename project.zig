@@ -468,9 +468,9 @@ pub const SimpleProject = struct {
     main: ?[]const u8 = null,
     modules: []const SimpleModule = &.{},
     dependencies: []const SimpleDependency = &.{},
+    options: []const SimpleOption = &.{},
     target: ?Build.ResolvedTarget = null,
     optimize: ?std.builtin.Optimize = null,
-    options: []const SimpleOption = &.{},
 
     fn importCount(self: Self) usize {
         // 1 for the ProjectInfo options module.
@@ -485,7 +485,7 @@ pub const SimpleProject = struct {
         const target = self.target orelse b.standardTargetOptions(.{});
         const optimize = self.optimize orelse b.standardOptimizeOption(.{});
 
-        var proj = Project.init(b, std.math.ceilPowerOfTwo(usize, self.importCount() + 64) catch unreachable);
+        var proj = Project.init(b, 1024);
 
         const build_root_create_options: Module.CreateOptions = .{
             .root_source_file = b.path(self.root),
