@@ -452,7 +452,7 @@ pub const SimpleOption = struct {
     name: []const u8,
     value: SimpleValue,
 
-    pub inline fn init(name: []const u8, value: anytype) Self {
+    pub inline fn init(comptime T: type, name: []const u8, value: T) Self {
         return .{
             .name = name,
             .value = SimpleValue.init(value),
