@@ -558,93 +558,6 @@ pub const SimpleProject = struct {
                         check_options.addOption(CT, opt.name, v.check);
                     },
                 }
-                // switch (opt.values) {
-                //     .Bool => |v| {
-                //         release_options.addOption(bool, opt.name, v.release);
-                //         check_options.addOption(bool, opt.name, v.check);
-                //     },
-                //     .U8 => |v| {
-                //         release_options.addOption(u8, opt.name, v.release);
-                //         check_options.addOption(u8, opt.name, v.check);
-                //     },
-                //     .U16 => |v| {
-                //         release_options.addOption(u16, opt.name, v.release);
-                //         check_options.addOption(u16, opt.name, v.check);
-                //     },
-                //     .U32 => |v| {
-                //         release_options.addOption(u32, opt.name, v.release);
-                //         check_options.addOption(u32, opt.name, v.check);
-                //     },
-                //     .U64 => |v| {
-                //         release_options.addOption(u64, opt.name, v.release);
-                //         check_options.addOption(u64, opt.name, v.check);
-                //     },
-                //     .U128 => |v| {
-                //         const V = u128;
-                //         release_options.addOption(V, opt.name, v.release);
-                //         check_options.addOption(V, opt.name, v.check);
-                //     },
-                //     .I8 => |v| {
-                //         const V = i8;
-                //         release_options.addOption(V, opt.name, v.release);
-                //         check_options.addOption(V, opt.name, v.check);
-                //     },
-                //     .I16 => |v| {
-                //         const V = i16;
-                //         release_options.addOption(V, opt.name, v.release);
-                //         check_options.addOption(V, opt.name, v.check);
-                //     },
-                //     .I32 => |v| {
-                //         const V = i32;
-                //         release_options.addOption(V, opt.name, v.release);
-                //         check_options.addOption(V, opt.name, v.check);
-                //     },
-                //     .I64 => |v| {
-                //         const V = i64;
-                //         release_options.addOption(V, opt.name, v.release);
-                //         check_options.addOption(V, opt.name, v.check);
-                //     },
-                //     .I128 => |v| {
-                //         const V = i128;
-                //         release_options.addOption(V, opt.name, v.release);
-                //         check_options.addOption(V, opt.name, v.check);
-                //     },
-                //     .Usize => |v| {
-                //         const V = usize;
-                //         release_options.addOption(V, opt.name, v.release);
-                //         check_options.addOption(V, opt.name, v.check);
-                //     },
-                //     .Isize => |v| {
-                //         const V = isize;
-                //         release_options.addOption(V, opt.name, v.release);
-                //         check_options.addOption(V, opt.name, v.check);
-                //     },
-                //     .F16 => |v| {
-                //         const V = f16;
-                //         release_options.addOption(V, opt.name, v.release);
-                //         check_options.addOption(V, opt.name, v.check);
-                //     },
-                //     .F32 => |v| {
-                //         const V = f32;
-                //         release_options.addOption(V, opt.name, v.release);
-                //         check_options.addOption(V, opt.name, v.check);
-                //     },
-                //     .F64 => |v| {
-                //         const V = f64;
-                //         release_options.addOption(V, opt.name, v.release);
-                //         check_options.addOption(V, opt.name, v.check);
-                //     },
-                //     .F128 => |v| {
-                //         const V = f128;
-                //         release_options.addOption(V, opt.name, v.release);
-                //         check_options.addOption(V, opt.name, v.check);
-                //     },
-                //     .Bytes => |v| {
-                //         const V = []const u8;
-                //         release_options.addOption(V, opt.name, v.release);
-                //         check_options.addOption(V, opt.name, v.check);
-                //     },
-                // }
             }
             const release_opts_mod = release_options.createModule();
             const check_opts_mod = check_options.createModule();
@@ -672,17 +585,6 @@ pub const SimpleProject = struct {
                 proj.addCommonDep(mod.rename orelse mod.name, dep_mod);
             }
         }
-        // const mod_tests = b.addTest(.{
-        //     .root_module = coreo_mod,
-        // });
-        // const run_mod_tests = b.addRunArtifact(mod_tests);
-        // const exe_tests = b.addTest(.{
-        //     .root_module = exe.root_module,
-        // });
-        // const run_exe_tests = b.addRunArtifact(exe_tests);
-        // const test_step = b.step("test", "Run tests");
-        // test_step.dependOn(&run_mod_tests.step);
-        // test_step.dependOn(&run_exe_tests.step);
 
         const check_mod_tests = b.addTest(.{
             .root_module = check_root_module,
@@ -707,7 +609,11 @@ pub const SimpleProject = struct {
                 .name = "main",
                 .root_module = main_mod,
             };
-            proj.addInstallExecutable("run", &main_exe, exe_opts);
+            const run_step_name_len = self.info.name.len + 4;
+            const run_step_name: []u8 = b.allocator.alloc(u8, run_step_name_len) catch @panic("Out of memory.");
+            @memcpy(run_step_name[0..4], "run:");
+            @memcpy(run_step_name[4..], self.info.name);
+            proj.addInstallExecutable(run_step_name, &main_exe, exe_opts);
             const check_main_opts: Module.CreateOptions = .{
                 .root_source_file = b.path(main_file),
                 .target = target,
