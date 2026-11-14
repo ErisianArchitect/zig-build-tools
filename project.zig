@@ -479,12 +479,46 @@ pub const SimpleOption = struct {
     }
 };
 
+pub const SimpleExeSteps = enum {
+    const Self = @This();
+    none,
+    check,
+    check_and_tests,
+
+    pub inline fn hasCheck(self: Self) bool {
+        return switch (self) {
+            .none => false,
+            .check,
+            .check_and_tests => true,
+        };
+    }
+
+    pub inline fn hasTests(self: Self) bool {
+        return switch (self) {
+            .none,
+            .check => false,
+            .check_and_tests => true,
+        };
+    }
+};
+
+pub const SimpleExe = struct {
+    const Self = @This();
+    
+    name: []const u8,
+    path: []const u8,
+    target: ?Build.ResolvedTarget = null,
+    optimize: ?std.builtin.Optimize = null,
+    steps: SimpleExeSteps = .check_and_tests,
+};
+
 pub const SimpleProject = struct {
     const Self = @This();
 
     info: ProjectInfo,
     root: []const u8,
     main: ?[]const u8 = null,
+    exes: []const SimpleExe = &.{},
     modules: []const SimpleModule = &.{},
     dependencies: []const SimpleDependency = &.{},
     options: []const SimpleOption = &.{},
@@ -595,9 +629,8 @@ pub const SimpleProject = struct {
         test_step.dependOn(&run_check_mod_tests.step);
         
         const check_step = b.step("check", "Special step for performing checking (where COMPILE.checking == true).");
-
+        const run_prefix: []const u8 = comptime "run:";
         if (self.main) |main_file| {
-            var main_exe: *Compile = undefined;
             const main_mod_opts: Module.CreateOptions = .{
                 .root_source_file = b.path(main_file),
                 .target = target,
@@ -609,10 +642,11 @@ pub const SimpleProject = struct {
                 .name = "main",
                 .root_module = main_mod,
             };
-            const run_step_name_len = self.info.name.len + 4;
+            const run_step_name_len = self.info.name.len + run_prefix.len;
             const run_step_name: []u8 = b.allocator.alloc(u8, run_step_name_len) catch @panic("Out of memory.");
-            @memcpy(run_step_name[0..4], "run:");
-            @memcpy(run_step_name[4..], self.info.name);
+            @memcpy(run_step_name[0..run_prefix.len], run_prefix);
+            @memcpy(run_step_name[run_prefix.len..], self.info.name);
+            var main_exe: *Compile = undefined;
             proj.addInstallExecutable(run_step_name, &main_exe, exe_opts);
             const check_main_opts: Module.CreateOptions = .{
                 .root_source_file = b.path(main_file),
@@ -635,6 +669,54 @@ pub const SimpleProject = struct {
             const main_tests_runner = b.addRunArtifact(main_run_tests);
             test_step.dependOn(&main_tests_runner.step);
         }
+
+        for (self.exes) |simple_exe| {
+            const exe_mod_opts: Module.CreateOptions = .{
+                .root_source_file = b.path(simple_exe.path),
+                .target = simple_exe.target orelse target,
+                .optimize = simple_exe.optimize orelse optimize,
+                .imports = proj.releaseImports(),
+            };
+            const exe_mod = b.createModule(exe_mod_opts);
+            const exe_opts: ExecutableOptions = .{
+                .name = simple_exe.name,
+                .root_module = exe_mod,
+            };
+            const run_step_name_len = simple_exe.name.len + run_prefix.len;
+            const run_step_name: []u8 = b.allocator.alloc(u8, run_step_name_len);
+            @memcpy(run_step_name[0..run_prefix.len], run_prefix);
+            @memcpy(run_step_name[run_prefix.len..], simple_exe.name);
+            var exe: *Compile = undefined;
+            proj.addInstallExecutable(run_step_name, &exe, exe_opts);
+            if (simple_exe.steps.hasCheck()) {
+                const check_exe_opts: Module.CreateOptions = .{
+                    .root_source_file = b.path(simple_exe.path),
+                    .target = simple_exe.target orelse target,
+                    .optimize = .debug,
+                    .imports = proj.checkImports(),
+                };
+                const check_exe_mod = b.createModule(check_exe_opts);
+                const check_exe_name_len = simple_exe.name.len + check_suffix.len;
+                const check_exe_name: []u8 = b.allocator.alloc(u8, check_exe_name_len);
+                @memcpy(check_exe_name[0..simple_exe.name.len], simple_exe.name);
+                @memcpy(check_exe_name[simple_exe.name.len..], check_suffix);
+                const check_opts: ExecutableOptions = .{
+                    .name = check_exe_name,
+                    .root_module = check_exe_mod,
+                };
+                const check_exe: *Compile = b.addExecutable(check_opts);
+
+                check_step.dependOn(&check_exe.step);
+                if (simple_exe.steps.hasTests()) {
+                    const exe_run_tests = b.addTest(Build.TestOptions{
+                        .root_module = check_exe.root_module,
+                    });
+                    const exe_tests_runner = b.addRunArtifact(exe_run_tests);
+                    test_step.dependOn(&exe_tests_runner.step);
+                }
+            }
+        }
+        
         const lib_opts: Build.LibraryOptions = .{
             .name = "checking",
             .root_module = check_root_module,
