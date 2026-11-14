@@ -738,3 +738,17 @@ pub const SimpleProject = struct {
         b.installArtifact(build_lib_artifact);
     }
 };
+
+pub const ProjectBuilder = struct {
+    const Self = @This();
+    
+    build: *Build,
+
+    pub fn init(b: *Build) Self {
+        return .{.build = b};
+    }
+
+    pub fn buildSimple(self: Self, project: SimpleProject) void {
+        project.build(self.build);
+    }
+};
