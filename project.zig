@@ -683,7 +683,7 @@ pub const SimpleProject = struct {
                 .root_module = exe_mod,
             };
             const run_step_name_len = simple_exe.name.len + run_prefix.len;
-            const run_step_name: []u8 = b.allocator.alloc(u8, run_step_name_len);
+            const run_step_name: []u8 = b.allocator.alloc(u8, run_step_name_len) catch @panic("Out of memory.");
             @memcpy(run_step_name[0..run_prefix.len], run_prefix);
             @memcpy(run_step_name[run_prefix.len..], simple_exe.name);
             var exe: *Compile = undefined;
@@ -697,7 +697,7 @@ pub const SimpleProject = struct {
                 };
                 const check_exe_mod = b.createModule(check_exe_opts);
                 const check_exe_name_len = simple_exe.name.len + check_suffix.len;
-                const check_exe_name: []u8 = b.allocator.alloc(u8, check_exe_name_len);
+                const check_exe_name: []u8 = b.allocator.alloc(u8, check_exe_name_len) catch @panic("Out of memory.");
                 @memcpy(check_exe_name[0..simple_exe.name.len], simple_exe.name);
                 @memcpy(check_exe_name[simple_exe.name.len..], check_suffix);
                 const check_opts: ExecutableOptions = .{
