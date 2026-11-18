@@ -512,6 +512,11 @@ pub const SimpleExe = struct {
     steps: SimpleExeSteps = .check_and_tests,
 };
 
+pub const ZigModule = struct {
+    name: []const u8,
+    module: *Module,
+};
+
 pub const SimpleProject = struct {
     const Self = @This();
 
@@ -520,7 +525,9 @@ pub const SimpleProject = struct {
     main: ?[]const u8 = null,
     exes: []const SimpleExe = &.{},
     modules: []const SimpleModule = &.{},
+    zig_modules: []const ZigModule = &.{},
     dependencies: []const SimpleDependency = &.{},
+    zig_dependencies: []const void = &.{},
     options: []const SimpleOption = &.{},
     target: ?Build.ResolvedTarget = null,
     optimize: ?std.builtin.Optimize = null,
@@ -618,6 +625,11 @@ pub const SimpleProject = struct {
                 const dep_mod = dependency.module(mod.name);
                 proj.addCommonDep(mod.rename orelse mod.name, dep_mod);
             }
+        }
+
+        for (self.zig_modules) |module| {
+            proj.release_imports.connectOneWay(module.name, module.module);
+            proj.check_imports.connectOneWay(module.name, module.module);
         }
 
         const check_mod_tests = b.addTest(.{
