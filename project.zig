@@ -527,7 +527,6 @@ pub const SimpleProject = struct {
     modules: []const SimpleModule = &.{},
     zig_modules: []const ZigModule = &.{},
     dependencies: []const SimpleDependency = &.{},
-    zig_dependencies: []const void = &.{},
     options: []const SimpleOption = &.{},
     target: ?Build.ResolvedTarget = null,
     optimize: ?std.builtin.Optimize = null,
