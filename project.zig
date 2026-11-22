@@ -530,6 +530,7 @@ pub const SimpleProject = struct {
     options: []const SimpleOption = &.{},
     target: ?Build.ResolvedTarget = null,
     optimize: ?std.builtin.Optimize = null,
+    link_libc: bool = false,
 
     fn importCount(self: Self) usize {
         // 1 for the ProjectInfo options module.
@@ -559,7 +560,7 @@ pub const SimpleProject = struct {
         };
 
         const build_root_module: *Module = b.addModule(self.info.name, build_root_create_options);
-        const check_root_module: *Module = b.createModule(check_root_create_options);
+        const check_root_module: *Module = b.addModule(check_root_create_options);
 
         const check_suffix: []const u8 = "_check";
         const check_root_name: []u8 = b.allocator.alloc(u8, self.info.name.len + check_suffix.len) catch @panic("Out of memory.");
